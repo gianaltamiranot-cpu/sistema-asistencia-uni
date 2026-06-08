@@ -33,6 +33,20 @@ th{
     padding:10px;
 }
 
+.boton-excel{
+    padding:10px 20px;
+    background:green;
+    color:white;
+    border:none;
+    border-radius:5px;
+    cursor:pointer;
+    font-size:16px;
+}
+
+.boton-excel:hover{
+    background:#006400;
+}
+
 </style>
 
 </head>
@@ -40,6 +54,18 @@ th{
 <body>
 
 <h1>Consulta de Asistencias</h1>
+
+<a href="/exportar_excel">
+
+<button class="boton-excel">
+
+📥 Exportar a Excel
+
+</button>
+
+</a>
+
+<br><br>
 
 <input
 type="text"
@@ -53,6 +79,7 @@ onkeyup="buscarNombre()"
 <table id="tabla">
 
 <thead>
+
 <tr>
     <th>Fecha</th>
     <th>Hora</th>
@@ -60,6 +87,7 @@ onkeyup="buscarNombre()"
     <th>Nombre</th>
     <th>Evidencia</th>
 </tr>
+
 </thead>
 
 <tbody>
@@ -76,13 +104,17 @@ onkeyup="buscarNombre()"
 <td>
 
 <a href="/uploads/{{ r['Evidencia'] }}" target="_blank">
+
 📷 Ver
+
 </a>
 
 |
 
 <a href="/uploads/{{ r['Evidencia'] }}" download>
+
 ⬇ Descargar
+
 </a>
 
 </td>
@@ -99,32 +131,32 @@ onkeyup="buscarNombre()"
 
 function buscarNombre(){
 
-let filtro =
-document.getElementById("buscar")
-.value
-.toUpperCase();
+    let filtro =
+    document.getElementById("buscar")
+    .value
+    .toUpperCase();
 
-let filas =
-document.querySelectorAll("#tabla tbody tr");
+    let filas =
+    document.querySelectorAll("#tabla tbody tr");
 
-filas.forEach(function(fila){
+    filas.forEach(function(fila){
 
-let nombre =
-fila.cells[3]
-.textContent
-.toUpperCase();
+        let nombre =
+        fila.cells[3]
+        .textContent
+        .toUpperCase();
 
-if(nombre.indexOf(filtro)>-1){
+        if(nombre.indexOf(filtro) > -1){
 
-fila.style.display="";
+            fila.style.display = "";
 
-}else{
+        }else{
 
-fila.style.display="none";
+            fila.style.display = "none";
 
-}
+        }
 
-});
+    });
 
 }
 

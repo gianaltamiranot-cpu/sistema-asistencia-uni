@@ -1,13 +1,12 @@
-from flask import Flask, render_template, request, send_from_directory, send_file
+from flask import Flask, render_template, request, send_from_directory
 from werkzeug.utils import secure_filename
 import os
 import pandas as pd
-import sqlite3
 from datetime import datetime, timedelta
 
 app = Flask(__name__)
 
-# Crear carpeta uploads
+# Crear carpeta uploads si no existe
 if not os.path.exists("uploads"):
     os.makedirs("uploads")
 
@@ -60,25 +59,20 @@ def registrar():
     fecha = ahora.strftime("%d/%m/%Y")
     hora = ahora.strftime("%H:%M:%S")
 
-    conexion = sqlite3.connect("asistencias.db")
-    cursor = conexion.cursor()
+    asistencia = pd.read_excel("asistencias.xlsx")
 
-    cursor.execute("""
-        SELECT fecha, hora
-        FROM asistencias
-        WHERE nombre = ?
-        ORDER BY id DESC
-        LIMIT 1
-    """, (nombre,))
+    registros_persona = asistencia[
+        asistencia["Nombre"] == nombre
+    ]
 
-    ultimo = cursor.fetchone()
+    if len(registros_persona) > 0:
 
-    if ultimo:
+        ultimo = registros_persona.iloc[-1]
 
         try:
 
             fecha_hora_ultima = datetime.strptime(
-                ultimo[0] + " " + ultimo[1],
+                str(ultimo["Fecha"]) + " " + str(ultimo["Hora"]),
                 "%d/%m/%Y %H:%M:%S"
             )
 
@@ -89,8 +83,6 @@ def registrar():
                 minutos_restantes = (
                     30 - int(diferencia.total_seconds() / 60)
                 )
-
-                conexion.close()
 
                 return f"""
                 <h2>⚠️ Registro reciente</h2>
@@ -111,20 +103,23 @@ def registrar():
         except:
             pass
 
-    cursor.execute("""
-        INSERT INTO asistencias
-        (fecha, hora, comite, nombre, evidencia)
-        VALUES (?, ?, ?, ?, ?)
-    """, (
-        fecha,
-        hora,
-        comite,
-        nombre,
-        nombre_archivo
-    ))
+    nueva_fila = pd.DataFrame([{
+        "Fecha": fecha,
+        "Hora": hora,
+        "Comite": comite,
+        "Nombre": nombre,
+        "Evidencia": nombre_archivo
+    }])
 
-    conexion.commit()
-    conexion.close()
+    asistencia = pd.concat(
+        [asistencia, nueva_fila],
+        ignore_index=True
+    )
+
+    asistencia.to_excel(
+        "asistencias.xlsx",
+        index=False
+    )
 
     return f"""
     <h2>✅ Asistencia registrada</h2>
@@ -137,81 +132,18 @@ def registrar():
 
     <a href="/">Volver</a>
     """
-
-
 @app.route("/uploads/<archivo>")
 def ver_evidencia(archivo):
     return send_from_directory("uploads", archivo)
 
-
 @app.route("/consultar")
 def consultar():
 
-    conexion = sqlite3.connect("asistencias.db")
-
-    cursor = conexion.cursor()
-
-    cursor.execute("""
-        SELECT fecha, hora, comite, nombre, evidencia
-        FROM asistencias
-        ORDER BY id DESC
-    """)
-
-    datos = cursor.fetchall()
-
-    conexion.close()
-
-    registros = []
-
-    for fila in datos:
-
-        registros.append({
-            "Fecha": fila[0],
-            "Hora": fila[1],
-            "Comite": fila[2],
-            "Nombre": fila[3],
-            "Evidencia": fila[4]
-        })
-
-    print("TOTAL:", len(registros))
-    print(registros)
+    asistencia = pd.read_excel("asistencias.xlsx")
 
     return render_template(
         "consultar.html",
-        registros=registros
-    )
-
-@app.route("/exportar_excel")
-def exportar_excel():
-
-    conexion = sqlite3.connect("asistencias.db")
-
-    df = pd.read_sql_query(
-        """
-        SELECT
-            fecha AS Fecha,
-            hora AS Hora,
-            comite AS Comite,
-            nombre AS Nombre,
-            evidencia AS Evidencia
-        FROM asistencias
-        ORDER BY id DESC
-        """,
-        conexion
-    )
-
-    conexion.close()
-
-    nombre_archivo = "reporte_asistencias.xlsx"
-
-    df.to_excel(
-        nombre_archivo,
-        index=False
-    )
-
-    return send_file(
-        nombre_archivo,
-        as_attachment=True
+        registros=asistencia.to_dict("records")
     )
 if __name__ == "__main__":
     app.run(debug=True)
