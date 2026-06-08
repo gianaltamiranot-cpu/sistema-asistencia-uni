@@ -1,0 +1,6 @@
+services:
+  - type: web
+    name: sistema-asistencia-uni
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app1:app
