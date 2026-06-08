@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<title>Consulta de Asistencias</title>
+
+<style>
+
+body{
+    font-family:Arial;
+    padding:20px;
+}
+
+table{
+    width:100%;
+    border-collapse:collapse;
+}
+
+th,td{
+    border:1px solid #ccc;
+    padding:10px;
+    text-align:center;
+}
+
+th{
+    background:#b30000;
+    color:white;
+}
+
+#buscar{
+    width:300px;
+    padding:10px;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<h1>Consulta de Asistencias</h1>
+
+<input
+type="text"
+id="buscar"
+placeholder="Buscar por nombre..."
+onkeyup="buscarNombre()"
+>
+
+<br><br>
+
+<table id="tabla">
+
+<thead>
+<tr>
+    <th>Fecha</th>
+    <th>Hora</th>
+    <th>Comité</th>
+    <th>Nombre</th>
+    <th>Evidencia</th>
+</tr>
+</thead>
+
+<tbody>
+
+{% for r in registros %}
+
+<tr>
+
+<td>{{ r["Fecha"] }}</td>
+<td>{{ r["Hora"] }}</td>
+<td>{{ r["Comite"] }}</td>
+<td>{{ r["Nombre"] }}</td>
+
+<td>
+
+<a href="/uploads/{{ r['Evidencia'] }}" target="_blank">
+📷 Ver
+</a>
+
+|
+
+<a href="/uploads/{{ r['Evidencia'] }}" download>
+⬇ Descargar
+</a>
+
+</td>
+
+</tr>
+
+{% endfor %}
+
+</tbody>
+
+</table>
+
+<script>
+
+function buscarNombre(){
+
+let filtro =
+document.getElementById("buscar")
+.value
+.toUpperCase();
+
+let filas =
+document.querySelectorAll("#tabla tbody tr");
+
+filas.forEach(function(fila){
+
+let nombre =
+fila.cells[3]
+.textContent
+.toUpperCase();
+
+if(nombre.indexOf(filtro)>-1){
+
+fila.style.display="";
+
+}else{
+
+fila.style.display="none";
+
+}
+
+});
+
+}
+
+</script>
+
+</body>
+
+</html>
