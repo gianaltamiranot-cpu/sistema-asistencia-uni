@@ -55,7 +55,7 @@ def registrar():
 
     archivo.save(ruta)
 
-    ahora = datetime.now()
+    ahora = datetime.utcnow() - timedelta(hours=5)
 
     fecha = ahora.strftime("%d/%m/%Y")
     hora = ahora.strftime("%H:%M:%S")

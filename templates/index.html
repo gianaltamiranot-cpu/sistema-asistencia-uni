@@ -192,16 +192,20 @@ function actualizarNombres(){
     });
 }
 
-actualizarNombres();
-
 function actualizarReloj(){
 
     let ahora = new Date();
 
     document.getElementById("reloj").innerHTML =
-        ahora.toLocaleDateString() +
+        ahora.toLocaleDateString(
+            "es-PE",
+            { timeZone: "America/Lima" }
+        ) +
         " - " +
-        ahora.toLocaleTimeString();
+        ahora.toLocaleTimeString(
+            "es-PE",
+            { timeZone: "America/Lima" }
+        );
 
 }
 
