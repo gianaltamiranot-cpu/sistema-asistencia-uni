@@ -1,3 +1,4 @@
+from zoneinfo import ZoneInfo
 from flask import Flask, render_template, request, send_from_directory, send_file
 from werkzeug.utils import secure_filename
 import os
@@ -55,7 +56,7 @@ def registrar():
 
     archivo.save(ruta)
 
-    ahora = datetime.utcnow() - timedelta(hours=5)
+    ahora = datetime.now(ZoneInfo("America/Lima"))
 
     fecha = ahora.strftime("%d/%m/%Y")
     hora = ahora.strftime("%H:%M:%S")
