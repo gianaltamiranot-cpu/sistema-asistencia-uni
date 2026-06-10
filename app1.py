@@ -42,7 +42,7 @@ def inicio():
 @app.route("/registrar", methods=["POST"])
 def registrar():
 
-    nombre = request.form["nombre"]
+    nombre = request.form["nombre"].strip()
     comite = request.form["comite"]
 
     archivo = request.files["evidencia"]
@@ -64,6 +64,7 @@ def registrar():
     conexion = sqlite3.connect("asistencias.db")
     cursor = conexion.cursor()
 
+    # Buscar el último registro del voluntario
     cursor.execute("""
         SELECT fecha, hora
         FROM asistencias
@@ -74,44 +75,45 @@ def registrar():
 
     ultimo = cursor.fetchone()
 
+    # Verificar si ya registró hace menos de 30 minutos
     if ultimo:
 
-        try:
+        fecha_hora_ultima = datetime.strptime(
+            ultimo[0] + " " + ultimo[1],
+            "%d/%m/%Y %H:%M:%S"
+        )
 
-            fecha_hora_ultima = datetime.strptime(
-                ultimo[0] + " " + ultimo[1],
-                "%d/%m/%Y %H:%M:%S"
+        fecha_hora_ultima = fecha_hora_ultima.replace(
+            tzinfo=ZoneInfo("America/Lima")
+        )
+
+        diferencia = ahora - fecha_hora_ultima
+
+        if diferencia.total_seconds() < 1800:
+
+            minutos_restantes = (
+                30 - int(diferencia.total_seconds() // 60)
             )
 
-            diferencia = ahora - fecha_hora_ultima
+            conexion.close()
 
-            if diferencia < timedelta(minutes=30):
+            return f"""
+            <h2>⚠️ Registro reciente</h2>
 
-                minutos_restantes = (
-                    30 - int(diferencia.total_seconds() / 60)
-                )
+            <p>
+            <b>{nombre}</b> ya registró asistencia hace poco.
+            </p>
 
-                conexion.close()
+            <p>
+            Debe esperar aproximadamente
+            <b>{minutos_restantes} minutos</b>
+            para volver a registrar.
+            </p>
 
-                return f"""
-                <h2>⚠️ Registro reciente</h2>
+            <a href="/">Volver</a>
+            """
 
-                <p>
-                <b>{nombre}</b> ya registró asistencia hace poco.
-                </p>
-
-                <p>
-                Debe esperar aproximadamente
-                <b>{minutos_restantes} minutos</b>
-                para volver a registrar.
-                </p>
-
-                <a href="/">Volver</a>
-                """
-
-        except:
-            pass
-
+    # Registrar asistencia
     cursor.execute("""
         INSERT INTO asistencias
         (fecha, hora, comite, nombre, evidencia)
