@@ -161,9 +161,60 @@ def admin():
         """
 
     conexion = sqlite3.connect("asistencias.db")
-
     cursor = conexion.cursor()
 
+    # Ranking de asistencia
+    cursor.execute("""
+        SELECT nombre,
+               comite,
+               COUNT(*) AS total
+        FROM asistencias
+        GROUP BY nombre, comite
+        ORDER BY total DESC
+    """)
+
+    ranking_datos = cursor.fetchall()
+
+    ranking = []
+
+    for fila in ranking_datos:
+
+        ranking.append({
+            "Nombre": fila[0],
+            "Comite": fila[1],
+            "Total": fila[2]
+        })
+
+    # Voluntarios que asistieron
+    cursor.execute("""
+        SELECT DISTINCT nombre
+        FROM asistencias
+    """)
+
+    asistieron = [fila[0] for fila in cursor.fetchall()]
+
+    # Todos los voluntarios del Excel
+    todos = df["Nombre"].dropna().tolist()
+
+    # Faltantes
+    faltaron = []
+
+    for nombre in todos:
+
+        if nombre not in asistieron:
+
+            faltaron.append(nombre)
+
+    total_voluntarios = len(todos)
+    total_asistieron = len(asistieron)
+    total_faltaron = len(faltaron)
+
+    porcentaje = round(
+        total_asistieron * 100 / total_voluntarios,
+        2
+    )
+
+    # Registros completos
     cursor.execute("""
         SELECT fecha,
                hora,
@@ -183,18 +234,31 @@ def admin():
 
     for fila in datos:
 
+        dni = fila[4]
+
+        if dni is None:
+            dni = ""
+        else:
+            dni = str(dni).replace(".0", "")
+
         registros.append({
             "Fecha": fila[0],
             "Hora": fila[1],
             "Comite": fila[2],
             "Nombre": fila[3],
-            "DNI": fila[4],
+            "DNI": dni,
             "Evidencia": fila[5]
         })
 
     return render_template(
         "admin.html",
-        registros=registros
+        registros=registros,
+        ranking=ranking,
+        faltaron=faltaron,
+        total_voluntarios=total_voluntarios,
+        total_asistieron=total_asistieron,
+        total_faltaron=total_faltaron,
+        porcentaje=porcentaje
     )
     
 @app.route("/exportar_excel")

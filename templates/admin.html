@@ -43,6 +43,10 @@ th{
     font-size:16px;
 }
 
+.boton-excel:hover{
+    background:#006400;
+}
+
 </style>
 
 </head>
@@ -61,7 +65,64 @@ th{
 
 </a>
 
-<br><br>
+<hr>
+
+<h2>📊 Resumen</h2>
+
+<p><b>Total voluntarios:</b> {{ total_voluntarios }}</p>
+
+<p><b>Asistieron:</b> {{ total_asistieron }}</p>
+
+<p><b>Faltaron:</b> {{ total_faltaron }}</p>
+
+<p><b>Porcentaje:</b> {{ porcentaje }}%</p>
+
+<hr>
+
+<h2>🏆 Ranking de Asistencia</h2>
+
+<table>
+
+<tr>
+    <th>Puesto</th>
+    <th>Nombre</th>
+    <th>Comité</th>
+    <th>Asistencias</th>
+</tr>
+
+{% for r in ranking %}
+
+<tr>
+
+<td>{{ loop.index }}</td>
+
+<td>{{ r["Nombre"] }}</td>
+
+<td>{{ r["Comite"] }}</td>
+
+<td>{{ r["Total"] }}</td>
+
+</tr>
+
+{% endfor %}
+
+</table>
+
+<hr>
+
+<h2>❌ Voluntarios que faltaron</h2>
+
+<ul style="text-align:left; display:inline-block;">
+
+{% for nombre in faltaron %}
+
+<li>{{ nombre }}</li>
+
+{% endfor %}
+
+</ul>
+
+<hr>
 
 <input
 type="text"
