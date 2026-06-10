@@ -10,11 +10,25 @@
 body{
     font-family:Arial;
     padding:20px;
+
+    background-image:url("/static/obito.gif");
+    background-size:cover;
+    background-position:center;
+    background-attachment:fixed;
+    background-repeat:no-repeat;
+}
+
+.panel{
+    background:rgba(255,255,255,0.82);
+    padding:30px;
+    border-radius:20px;
+    box-shadow:0 5px 25px rgba(0,0,0,0.5);
 }
 
 table{
     width:100%;
     border-collapse:collapse;
+    background:white;
 }
 
 th,td{
@@ -23,14 +37,21 @@ th,td{
     text-align:center;
 }
 
-th{
-    background:#b30000;
-    color:white;
+h1{
+    color:#8B0000;
+    text-shadow:2px 2px 8px black;
+}
+
+h2{
+    text-shadow:1px 1px 5px rgba(0,0,0,0.3);
 }
 
 #buscar{
     width:300px;
     padding:10px;
+    font-size:16px;
+    border-radius:5px;
+    border:1px solid #ccc;
 }
 
 .boton-excel{
@@ -47,13 +68,27 @@ th{
     background:#006400;
 }
 
+ul{
+    background:white;
+    display:inline-block;
+    padding:20px 40px;
+    border-radius:10px;
+    text-align:left;
+}
+
+h1{
+    color:#b30000;
+}
+
 </style>
 
 </head>
 
 <body>
 
-<h1>Panel Administrador</h1>
+<div class="panel">
+
+<h1>👨‍💼 Panel Administrador</h1>
 
 <a href="/exportar_excel">
 
@@ -95,11 +130,8 @@ th{
 <tr>
 
 <td>{{ loop.index }}</td>
-
 <td>{{ r["Nombre"] }}</td>
-
 <td>{{ r["Comite"] }}</td>
-
 <td>{{ r["Total"] }}</td>
 
 </tr>
@@ -112,7 +144,7 @@ th{
 
 <h2>❌ Voluntarios que faltaron</h2>
 
-<ul style="text-align:left; display:inline-block;">
+<ul>
 
 {% for nombre in faltaron %}
 
@@ -127,7 +159,7 @@ th{
 <input
 type="text"
 id="buscar"
-placeholder="Buscar por nombre..."
+placeholder="🔍 Buscar por nombre..."
 onkeyup="buscarNombre()"
 >
 
@@ -185,6 +217,8 @@ onkeyup="buscarNombre()"
 </tbody>
 
 </table>
+
+</div>
 
 <script>
 
