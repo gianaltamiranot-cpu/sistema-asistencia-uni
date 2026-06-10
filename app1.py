@@ -8,6 +8,8 @@ from datetime import datetime, timedelta
 
 app = Flask(__name__)
 
+ADMIN_PASSWORD = "UNI2026"
+
 # Crear carpeta uploads
 if not os.path.exists("uploads"):
     os.makedirs("uploads")
@@ -44,6 +46,18 @@ def registrar():
 
     nombre = request.form["nombre"].strip()
     comite = request.form["comite"]
+
+    # Buscar DNI automáticamente en el Excel
+    fila_miembro = df[df["Nombre"] == nombre]
+
+    if len(fila_miembro) == 0:
+        return """
+        <h2>❌ Error</h2>
+        <p>No se encontró el DNI del voluntario.</p>
+        <a href="/">Volver</a>
+        """
+
+    dni = str(int(fila_miembro.iloc[0]["DNI"])).strip()
 
     archivo = request.files["evidencia"]
 
@@ -116,14 +130,15 @@ def registrar():
     # Registrar asistencia
     cursor.execute("""
         INSERT INTO asistencias
-        (fecha, hora, comite, nombre, evidencia)
-        VALUES (?, ?, ?, ?, ?)
+        (fecha, hora, comite, nombre, evidencia, dni)
+        VALUES (?, ?, ?, ?, ?, ?)
     """, (
         fecha,
         hora,
         comite,
         nombre,
-        nombre_archivo
+        nombre_archivo,
+        dni
     ))
 
     conexion.commit()
@@ -134,6 +149,7 @@ def registrar():
 
     <p><b>Nombre:</b> {nombre}</p>
     <p><b>Comité:</b> {comite}</p>
+    <p><b>DNI:</b> {dni}</p>
     <p><b>Fecha:</b> {fecha}</p>
     <p><b>Hora:</b> {hora}</p>
     <p><b>Evidencia:</b> {nombre_archivo}</p>
@@ -147,15 +163,123 @@ def ver_evidencia(archivo):
     return send_from_directory("uploads", archivo)
 
 
-@app.route("/consultar")
+@app.route("/consultar", methods=["GET", "POST"])
 def consultar():
+
+    if request.method == "GET":
+        return render_template("consultar.html")
+
+    dni = request.form["dni"].strip()
+
+    conexion = sqlite3.connect("asistencias.db")
+    cursor = conexion.cursor()
+
+    cursor.execute("""
+        SELECT fecha, hora, comite, nombre
+        FROM asistencias
+        WHERE dni = ?
+        ORDER BY id DESC
+    """, (dni,))
+
+    datos = cursor.fetchall()
+
+    conexion.close()
+
+    if len(datos) == 0:
+        return f"""
+        <h2>❌ No se encontraron registros</h2>
+
+        <p>No existen asistencias registradas para el DNI {dni}.</p>
+
+        <a href="/consultar">Volver</a>
+        """
+
+    nombre = datos[0][3]
+
+    total = len(datos)
+
+    html = f"""
+    <h1>Mis Asistencias</h1>
+
+    <p><b>Nombre:</b> {nombre}</p>
+
+    <p><b>DNI:</b> {dni}</p>
+
+    <p><b>Total de registros:</b> {total}</p>
+
+    <table border="1" cellpadding="10" style="border-collapse:collapse;">
+        <tr>
+            <th>Fecha</th>
+            <th>Hora</th>
+            <th>Comité</th>
+        </tr>
+    """
+
+    for fila in datos:
+        html += f"""
+        <tr>
+            <td>{fila[0]}</td>
+            <td>{fila[1]}</td>
+            <td>{fila[2]}</td>
+        </tr>
+        """
+
+    html += """
+    </table>
+
+    <br><br>
+
+    <a href="/consultar">Nueva consulta</a>
+    """
+
+    return html
+
+@app.route("/admin", methods=["GET", "POST"])
+def admin():
+
+    if request.method == "GET":
+
+        return """
+        <h1>Panel Administrador</h1>
+
+        <form method="POST">
+
+            <p>Ingrese la contraseña:</p>
+
+            <input type="password"
+                   name="password"
+                   required>
+
+            <br><br>
+
+            <button type="submit">
+                Ingresar
+            </button>
+
+        </form>
+        """
+
+    password = request.form["password"]
+
+    if password != ADMIN_PASSWORD:
+
+        return """
+        <h2>❌ Contraseña incorrecta</h2>
+
+        <a href="/admin">Volver</a>
+        """
 
     conexion = sqlite3.connect("asistencias.db")
 
     cursor = conexion.cursor()
 
     cursor.execute("""
-        SELECT fecha, hora, comite, nombre, evidencia
+        SELECT fecha,
+               hora,
+               comite,
+               nombre,
+               dni,
+               evidencia
         FROM asistencias
         ORDER BY id DESC
     """)
@@ -173,17 +297,15 @@ def consultar():
             "Hora": fila[1],
             "Comite": fila[2],
             "Nombre": fila[3],
-            "Evidencia": fila[4]
+            "DNI": fila[4],
+            "Evidencia": fila[5]
         })
 
-    print("TOTAL:", len(registros))
-    print(registros)
-
     return render_template(
-        "consultar.html",
+        "admin.html",
         registros=registros
     )
-
+    
 @app.route("/exportar_excel")
 def exportar_excel():
 
