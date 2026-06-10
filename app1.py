@@ -41,134 +41,28 @@ def inicio():
     )
 
 
-@app.route("/registrar", methods=["POST"])
-def registrar():
-
-    nombre = request.form["nombre"].strip()
-    comite = request.form["comite"]
-
-    # Buscar DNI automáticamente en el Excel
-    fila_miembro = df[df["Nombre"] == nombre]
-
-    if len(fila_miembro) == 0:
-        return """
-        <h2>❌ Error</h2>
-        <p>No se encontró el DNI del voluntario.</p>
-        <a href="/">Volver</a>
-        """
-
-    dni = str(int(fila_miembro.iloc[0]["DNI"])).strip()
-
-    archivo = request.files["evidencia"]
-
-    nombre_archivo = (
-        datetime.now().strftime("%Y%m%d_%H%M%S_")
-        + secure_filename(archivo.filename)
-    )
-
-    ruta = os.path.join("uploads", nombre_archivo)
-
-    archivo.save(ruta)
-
-    ahora = datetime.now(ZoneInfo("America/Lima"))
-
-    fecha = ahora.strftime("%d/%m/%Y")
-    hora = ahora.strftime("%H:%M:%S")
-
-    conexion = sqlite3.connect("asistencias.db")
-    cursor = conexion.cursor()
-
-    # Buscar el último registro del voluntario
-    cursor.execute("""
-        SELECT fecha, hora
-        FROM asistencias
-        WHERE nombre = ?
-        ORDER BY id DESC
-        LIMIT 1
-    """, (nombre,))
-
-    ultimo = cursor.fetchone()
-
-    # Verificar si ya registró hace menos de 30 minutos
-    if ultimo:
-
-        fecha_hora_ultima = datetime.strptime(
-            ultimo[0] + " " + ultimo[1],
-            "%d/%m/%Y %H:%M:%S"
-        )
-
-        fecha_hora_ultima = fecha_hora_ultima.replace(
-            tzinfo=ZoneInfo("America/Lima")
-        )
-
-        diferencia = ahora - fecha_hora_ultima
-
-        if diferencia.total_seconds() < 1800:
-
-            minutos_restantes = (
-                30 - int(diferencia.total_seconds() // 60)
-            )
-
-            conexion.close()
-
-            return f"""
-            <h2>⚠️ Registro reciente</h2>
-
-            <p>
-            <b>{nombre}</b> ya registró asistencia hace poco.
-            </p>
-
-            <p>
-            Debe esperar aproximadamente
-            <b>{minutos_restantes} minutos</b>
-            para volver a registrar.
-            </p>
-
-            <a href="/">Volver</a>
-            """
-
-    # Registrar asistencia
-    cursor.execute("""
-        INSERT INTO asistencias
-        (fecha, hora, comite, nombre, evidencia, dni)
-        VALUES (?, ?, ?, ?, ?, ?)
-    """, (
-        fecha,
-        hora,
-        comite,
-        nombre,
-        nombre_archivo,
-        dni
-    ))
-
-    conexion.commit()
-    conexion.close()
-
-    return f"""
-    <h2>✅ Asistencia registrada</h2>
-
-    <p><b>Nombre:</b> {nombre}</p>
-    <p><b>Comité:</b> {comite}</p>
-    <p><b>DNI:</b> {dni}</p>
-    <p><b>Fecha:</b> {fecha}</p>
-    <p><b>Hora:</b> {hora}</p>
-    <p><b>Evidencia:</b> {nombre_archivo}</p>
-
-    <a href="/">Volver</a>
-    """
-
-
-@app.route("/uploads/<archivo>")
-def ver_evidencia(archivo):
-    return send_from_directory("uploads", archivo)
-
-
 @app.route("/consultar", methods=["GET", "POST"])
 def consultar():
 
     if request.method == "GET":
         return render_template("consultar.html")
 
+    accion = request.form.get("accion", "")
+
+    # Administrador
+    if accion == "admin":
+
+        password = request.form["password"]
+
+        if password != ADMIN_PASSWORD:
+            return """
+            <h2>❌ Contraseña incorrecta</h2>
+            <a href="/consultar">Volver</a>
+            """
+
+        return admin()
+
+    # Voluntario
     dni = request.form["dni"].strip()
 
     conexion = sqlite3.connect("asistencias.db")
@@ -195,16 +89,13 @@ def consultar():
         """
 
     nombre = datos[0][3]
-
     total = len(datos)
 
     html = f"""
     <h1>Mis Asistencias</h1>
 
     <p><b>Nombre:</b> {nombre}</p>
-
     <p><b>DNI:</b> {dni}</p>
-
     <p><b>Total de registros:</b> {total}</p>
 
     <table border="1" cellpadding="10" style="border-collapse:collapse;">
