@@ -39,8 +39,55 @@ def inicio():
         comites=comites,
         miembros_por_comite=miembros_por_comite
     )
+    
+@app.route("/registrar", methods=["POST"])
+def registrar():
 
+    nombre = request.form["nombre"]
+    comite = request.form["comite"]
 
+    archivo = request.files["evidencia"]
+
+    nombre_archivo = (
+        datetime.now(ZoneInfo("America/Lima")).strftime("%Y%m%d_%H%M%S_")
+        + secure_filename(archivo.filename)
+    )
+
+    ruta = os.path.join("uploads", nombre_archivo)
+    archivo.save(ruta)
+
+    ahora = datetime.now(ZoneInfo("America/Lima"))
+
+    fecha = ahora.strftime("%d/%m/%Y")
+    hora = ahora.strftime("%H:%M:%S")
+
+    conexion = sqlite3.connect("asistencias.db")
+    cursor = conexion.cursor()
+
+    cursor.execute("""
+        INSERT INTO asistencias
+        (fecha, hora, comite, nombre, evidencia)
+        VALUES (?, ?, ?, ?, ?)
+    """, (
+        fecha,
+        hora,
+        comite,
+        nombre,
+        nombre_archivo
+    ))
+
+    conexion.commit()
+    conexion.close()
+
+    return f"""
+    <h2>✅ Asistencia registrada</h2>
+    <p><b>Nombre:</b> {nombre}</p>
+    <p><b>Comité:</b> {comite}</p>
+    <p><b>Fecha:</b> {fecha}</p>
+    <p><b>Hora:</b> {hora}</p>
+    <a href="/">Volver</a>
+    """
+    
 @app.route("/consultar", methods=["GET", "POST"])
 def consultar():
 
